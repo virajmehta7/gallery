@@ -1,6 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gallery/utils/generate_thumbail.dart';
 import 'package:gallery/utils/sub_string_name.dart';
 import 'package:gallery/utils/utils.dart';
 import 'package:gallery/views/videos/video_view.dart';
@@ -15,7 +15,7 @@ class FolderVideoView extends StatefulWidget {
 
 class _FolderVideoViewState extends State<FolderVideoView> {
   Map<AssetPathEntity, List<AssetEntity>> folderVideos = {};
-  List? sortedFolders = [];
+  List<AssetPathEntity> sortedFolders = [];
 
   loadVideos() async {
     final List<AssetPathEntity> paths =
@@ -49,10 +49,10 @@ class _FolderVideoViewState extends State<FolderVideoView> {
 
   @override
   Widget build(BuildContext context) {
-    if (sortedFolders == null || sortedFolders!.isEmpty) {
+    if (sortedFolders.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(70),
+          padding: const EdgeInsets.all(50),
           child: CircularProgressIndicator(color: red),
         ),
       );
@@ -64,13 +64,13 @@ class _FolderVideoViewState extends State<FolderVideoView> {
         child: ListView.builder(
           shrinkWrap: true,
           physics: const BouncingScrollPhysics(),
-          itemCount: sortedFolders!.length,
+          itemCount: sortedFolders.length,
           itemBuilder: (context, index) {
-            final folder = sortedFolders![index];
-            final videos = folderVideos[folder] ?? [];
+            AssetPathEntity folder = sortedFolders[index];
+            List<AssetEntity> videos = folderVideos[folder] ?? [];
 
             return Padding(
-              padding: const EdgeInsets.fromLTRB(8, 10, 8, 32),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -82,72 +82,61 @@ class _FolderVideoViewState extends State<FolderVideoView> {
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   GridView.builder(
+                    itemCount: videos.length,
                     shrinkWrap: true,
                     physics: const BouncingScrollPhysics(),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
+                      crossAxisCount: 3,
                       crossAxisSpacing: 5,
                       mainAxisSpacing: 5,
                     ),
-                    itemCount: videos.length,
                     itemBuilder: (context, index) {
-                      final entity = videos[index];
-                      return FutureBuilder(
-                        future: entity.file,
+                      return FutureBuilder<Uint8List?>(
+                        future: videos[index].thumbnailData,
                         builder: (context, snapshot) {
                           if (snapshot.connectionState ==
                                   ConnectionState.done &&
                               snapshot.hasData) {
-                            return FutureBuilder(
-                              future: generateThumbnail(snapshot.data),
-                              builder: (context, thumbSnapshot) {
-                                if (thumbSnapshot.connectionState ==
-                                        ConnectionState.done &&
-                                    thumbSnapshot.hasData) {
-                                  return GestureDetector(
-                                    behavior: HitTestBehavior.translucent,
-                                    onTap: () {
-                                      Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (context) => VideoView(
-                                                    videoPath:
-                                                        snapshot.data!.path,
-                                                  )));
-                                    },
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      fit: StackFit.expand,
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                          child: Image.memory(
-                                            thumbSnapshot.data as Uint8List,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                        const Icon(
-                                          Icons.play_circle_fill,
-                                          size: 48,
-                                          color: Colors.white,
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }
-                                return Padding(
-                                  padding: const EdgeInsets.all(70),
-                                  child: CircularProgressIndicator(color: red),
-                                );
+                            return GestureDetector(
+                              behavior: HitTestBehavior.translucent,
+                              onTap: () async {
+                                File? file = await videos[index].file;
+                                String path = file!.path;
+
+                                // ignore: use_build_context_synchronously
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => VideoView(
+                                              video: videos[index],
+                                              videoPath: path,
+                                            )));
                               },
+                              child: Stack(
+                                alignment: Alignment.center,
+                                fit: StackFit.expand,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(5),
+                                    child: Image.memory(
+                                      snapshot.data!,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.play_circle_fill,
+                                    size: 48,
+                                    color: Colors.white,
+                                  ),
+                                ],
+                              ),
                             );
                           }
                           return Padding(
-                            padding: const EdgeInsets.all(70),
+                            padding: const EdgeInsets.all(50),
                             child: CircularProgressIndicator(color: red),
                           );
                         },

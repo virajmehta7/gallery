@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gallery/utils/outline_input_border.dart';
 import 'package:gallery/utils/utils.dart';
 import 'package:gallery/views/bottom_navigation_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,14 +16,14 @@ class ChangeTitle extends StatefulWidget {
 class _ChangeTitleState extends State<ChangeTitle> {
   TextEditingController titleTextEditingController = TextEditingController();
 
-  changeName() async {
+  updateTitle() async {
     titleTextEditingController.text = widget.title;
   }
 
   @override
   void initState() {
     super.initState();
-    changeName();
+    updateTitle();
   }
 
   @override
@@ -41,7 +42,7 @@ class _ChangeTitleState extends State<ChangeTitle> {
           children: [
             const SizedBox(height: 40),
             Text(
-              'Change Title',
+              'Update Title',
               style: TextStyle(
                 fontSize: 24,
                 color: red,
@@ -59,8 +60,8 @@ class _ChangeTitleState extends State<ChangeTitle> {
                   labelText: 'Title',
                   labelStyle: const TextStyle(
                     color: Colors.white,
-                    fontFamily: 'dotmatrix',
                     fontSize: 20,
+                    fontWeight: FontWeight.w300,
                   ),
                   enabledBorder: outlineInputBorder,
                   focusedBorder: outlineInputBorder,
@@ -85,12 +86,12 @@ class _ChangeTitleState extends State<ChangeTitle> {
                 elevation: 0,
                 padding: const EdgeInsets.fromLTRB(50, 15, 50, 15),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 backgroundColor: Colors.white,
               ),
               child: const Text(
-                'Change',
+                'Update',
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.black,
@@ -103,8 +104,3 @@ class _ChangeTitleState extends State<ChangeTitle> {
     );
   }
 }
-
-OutlineInputBorder outlineInputBorder = OutlineInputBorder(
-  borderSide: const BorderSide(color: Colors.white),
-  borderRadius: BorderRadius.circular(20),
-);

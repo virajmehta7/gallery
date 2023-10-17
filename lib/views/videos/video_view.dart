@@ -1,46 +1,51 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:gallery/utils/format_duration.dart';
 import 'package:gallery/utils/utils.dart';
+import 'package:gallery/views/entity_info.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoView extends StatefulWidget {
-  const VideoView({super.key, required this.videoPath});
+  const VideoView({super.key, required this.videoPath, required this.video});
 
-  final videoPath;
+  final String videoPath;
+  final AssetEntity video;
 
   @override
   State<VideoView> createState() => _VideoViewState();
 }
 
 class _VideoViewState extends State<VideoView> {
-  late VideoPlayerController _controller;
+  late VideoPlayerController controller;
   bool iconVisible = true;
 
-  final StreamController<Duration> _positionStreamController =
+  final StreamController<Duration> positionStreamController =
       StreamController<Duration>();
-  Stream<Duration> get _positionStream => _positionStreamController.stream;
 
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-    return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
-  }
+  Stream<Duration> get positionStream => positionStreamController.stream;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.file(File(widget.videoPath))
+    controller = VideoPlayerController.file(File(widget.videoPath))
       ..initialize().then((_) {
         setState(() {});
 
-        _controller.addListener(() {
-          _positionStreamController.add(_controller.value.position);
+        controller.addListener(() {
+          positionStreamController.add(controller.value.position);
         });
-        _controller.setLooping(true);
+        controller.setLooping(true);
       });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    controller.dispose();
+    positionStreamController.close();
   }
 
   @override
@@ -49,18 +54,18 @@ class _VideoViewState extends State<VideoView> {
       backgroundColor: backgroundColor,
       appBar: AppBar(
         title: StreamBuilder<Duration>(
-          stream: _positionStream,
+          stream: positionStream,
           builder: (context, snapshot) {
             if (snapshot.hasData) {
               return Text(
-                '${_formatDuration(snapshot.data!)} / ${_formatDuration(_controller.value.duration)}',
+                '${formatDuration(snapshot.data!)} / ${formatDuration(controller.value.duration)}',
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 18,
+                  fontSize: 16,
                 ),
               );
             } else {
-              return const SizedBox();
+              return Container();
             }
           },
         ),
@@ -71,24 +76,37 @@ class _VideoViewState extends State<VideoView> {
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            onPressed: () async {
-              final filePath = await widget.videoPath;
-              Share.shareFiles([filePath!]);
+            onPressed: () {
+              final filePath = widget.videoPath;
+              Share.shareFiles([filePath]);
             },
             icon: const Icon(Icons.share),
-          )
+          ),
+          IconButton(
+            onPressed: () {
+              controller.pause();
+              iconVisible = !iconVisible;
+              setState(() {});
+
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => EntityInfo(entity: widget.video)));
+            },
+            icon: const Icon(Icons.info),
+          ),
         ],
       ),
       body: Center(
-        child: _controller.value.isInitialized
+        child: controller.value.isInitialized
             ? GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onTap: () {
                   setState(() {
-                    if (_controller.value.isPlaying) {
-                      _controller.pause();
+                    if (controller.value.isPlaying) {
+                      controller.pause();
                     } else {
-                      _controller.play();
+                      controller.play();
                     }
                     iconVisible = !iconVisible;
                   });
@@ -97,8 +115,8 @@ class _VideoViewState extends State<VideoView> {
                   alignment: Alignment.center,
                   children: [
                     AspectRatio(
-                      aspectRatio: _controller.value.aspectRatio,
-                      child: VideoPlayer(_controller),
+                      aspectRatio: controller.value.aspectRatio,
+                      child: VideoPlayer(controller),
                     ),
                     AnimatedOpacity(
                       opacity: iconVisible ? 1.0 : 0.0,
@@ -107,7 +125,7 @@ class _VideoViewState extends State<VideoView> {
                         backgroundColor: Colors.white,
                         radius: 30,
                         child: Icon(
-                          _controller.value.isPlaying
+                          controller.value.isPlaying
                               ? Icons.pause
                               : Icons.play_arrow,
                           size: 40,
@@ -126,11 +144,5 @@ class _VideoViewState extends State<VideoView> {
               ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _controller.dispose();
   }
 }

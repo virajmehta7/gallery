@@ -75,8 +75,7 @@ class _PhotoViewState extends State<PhotoView> {
                   context,
                   MaterialPageRoute(
                       builder: (context) => EntityInfo(
-                            entity: widget.galleryItems![currentIndex],
-                          )));
+                          entity: widget.galleryItems![currentIndex])));
             },
             icon: const Icon(Icons.info),
           ),
@@ -95,7 +94,7 @@ class _PhotoViewState extends State<PhotoView> {
                   AssetEntityImageProvider(widget.galleryItems![index]),
               initialScale: PhotoViewComputedScale.contained,
               minScale: PhotoViewComputedScale.contained,
-              maxScale: PhotoViewComputedScale.covered * 1.5,
+              maxScale: PhotoViewComputedScale.covered * 2.5,
             );
           },
           loadingBuilder: (context, event) {

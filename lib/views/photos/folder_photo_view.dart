@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:gallery/utils/format_image_count.dart';
 import 'package:gallery/utils/sub_string_name.dart';
@@ -72,7 +71,7 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
             List<AssetEntity> images = folderImages[folder] ?? [];
 
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -205,56 +204,3 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// class AssetThumbnail extends StatelessWidget {
-//   const AssetThumbnail({
-//     Key? key,
-//     required this.assetPath,
-//   }) : super(key: key);
-
-//   final AssetPathEntity assetPath;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return FutureBuilder<Uint8List?>(
-//       future: _loadThumbnail(),
-//       builder: (context, snapshot) {
-//         final bytes = snapshot.data;
-//         if (bytes == null) {
-//           return const CircularProgressIndicator();
-//         }
-//         return Image.memory(bytes, fit: BoxFit.cover);
-//       },
-//     );
-//   }
-
-//   Future<Uint8List?> _loadThumbnail() async {
-//     // Replace this with the logic to obtain the actual thumbnail data.
-//     // For example:
-//     Future<Uint8List?>? pass;
-//     final thumbnailData = await assetPath.getAssetListPaged(page: 0, size: 100);
-//     thumbnailData.forEach((AssetEntity element) {
-//       pass = element.thumbnailData;
-//     });
-//     return pass;
-//   }
-// }
