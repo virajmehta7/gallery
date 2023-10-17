@@ -78,17 +78,17 @@ class _BottomNavBarState extends State<BottomNavBar> {
       ),
       body: tabs[currentIndex],
       bottomNavigationBar: BottomNavigationBar(
+        currentIndex: currentIndex,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: red,
-        unselectedItemColor: Colors.white,
+        backgroundColor: backgroundColor,
+        elevation: 0,
+        iconSize: 26,
         showSelectedLabels: true,
         showUnselectedLabels: true,
-        backgroundColor: backgroundColor,
-        iconSize: 26,
-        elevation: 0,
-        selectedFontSize: 14,
-        unselectedFontSize: 14,
-        currentIndex: currentIndex,
+        selectedItemColor: red,
+        unselectedItemColor: Colors.white,
+        selectedLabelStyle: const TextStyle(fontFamily: 'dotmatrix'),
+        unselectedLabelStyle: const TextStyle(fontFamily: 'dotmatrix'),
         onTap: (index) {
           HapticFeedback.vibrate();
           setState(() {
@@ -98,11 +98,11 @@ class _BottomNavBarState extends State<BottomNavBar> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.photo),
-            label: 'Photos',
+            label: 'PHOTOS',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.video_collection),
-            label: 'Videos',
+            label: 'VIDEOS',
           ),
         ],
       ),

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:gallery/utils/format_image_count.dart';
 import 'package:gallery/utils/sub_string_name.dart';
@@ -15,7 +17,7 @@ class FolderPhotoView extends StatefulWidget {
 
 class _FolderPhotoViewState extends State<FolderPhotoView> {
   Map<AssetPathEntity, List<AssetEntity>> folderImages = {};
-  List? sortedFolders = [];
+  List<AssetPathEntity> sortedFolders = [];
 
   loadImages() async {
     final List<AssetPathEntity> paths =
@@ -49,7 +51,7 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
 
   @override
   Widget build(BuildContext context) {
-    if (sortedFolders == null || sortedFolders!.isEmpty) {
+    if (sortedFolders.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(50),
@@ -62,15 +64,15 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: ListView.builder(
+          itemCount: sortedFolders.length,
           shrinkWrap: true,
           physics: const BouncingScrollPhysics(),
-          itemCount: sortedFolders!.length,
           itemBuilder: (context, index) {
-            final folder = sortedFolders![index];
-            final images = folderImages[folder] ?? [];
+            AssetPathEntity folder = sortedFolders[index];
+            List<AssetEntity> images = folderImages[folder] ?? [];
 
             return Padding(
-              padding: const EdgeInsets.fromLTRB(8, 10, 8, 32),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -98,7 +100,7 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
                         Text(
                           ' >',
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 18,
                             fontFamily: 'dotmatrix',
                             color: red,
                           ),
@@ -106,26 +108,25 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const BouncingScrollPhysics(),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
+                      crossAxisCount: 4,
                       crossAxisSpacing: 5,
                       mainAxisSpacing: 5,
                     ),
-                    itemCount: images.length < 6 ? images.length : 6,
+                    itemCount: images.length < 8 ? images.length : 8,
                     itemBuilder: (context, index) {
-                      final entity = images[index];
-                      return FutureBuilder(
-                        future: entity.file,
+                      return FutureBuilder<Uint8List?>(
+                        future: images[index].thumbnailData,
                         builder: (context, snapshot) {
                           if (snapshot.connectionState ==
                                   ConnectionState.done &&
                               snapshot.hasData) {
-                            if (index == 5) {
+                            if (index == 7) {
                               return GestureDetector(
                                 behavior: HitTestBehavior.translucent,
                                 onTap: () {
@@ -143,10 +144,10 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
                                   alignment: Alignment.center,
                                   children: [
                                     ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(5),
                                       child: Opacity(
                                         opacity: 0.2,
-                                        child: Image.file(
+                                        child: Image.memory(
                                           snapshot.data!,
                                           fit: BoxFit.cover,
                                         ),
@@ -154,10 +155,11 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
                                     ),
                                     Center(
                                       child: Text(
-                                        "+${formatImageCount(images.length - 5)}",
+                                        "+${formatImageCount(images.length - 7)}",
                                         style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 24,
+                                          fontSize: 18,
+                                          fontFamily: 'dotmatrix',
                                         ),
                                         overflow: TextOverflow.visible,
                                         textAlign: TextAlign.center,
@@ -178,95 +180,13 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
                                             initialIndex: index)));
                               },
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.file(
+                                borderRadius: BorderRadius.circular(5),
+                                child: Image.memory(
                                   snapshot.data!,
                                   fit: BoxFit.cover,
                                 ),
                               ),
                             );
-                            // else if (entity.type == AssetType.video) {
-                            //   return FutureBuilder(
-                            //     future: generateThumbnail(snapshot.data),
-                            //     builder: (context, thumbSnapshot) {
-                            //       if (thumbSnapshot.connectionState ==
-                            //               ConnectionState.done &&
-                            //           thumbSnapshot.hasData) {
-                            //         if (index == 5) {
-                            //           return GestureDetector(
-                            //             behavior: HitTestBehavior.translucent,
-                            //             onTap: () {
-                            //               Navigator.push(
-                            //                   context,
-                            //                   MaterialPageRoute(
-                            //                       builder: (context) =>
-                            //                           SpecificFolderImages(
-                            //                               folderName:
-                            //                                   subStringName(
-                            //                                       folder.name,
-                            //                                       15),
-                            //                               images: images)));
-                            //             },
-                            //             child: Stack(
-                            //               fit: StackFit.expand,
-                            //               alignment: Alignment.center,
-                            //               children: [
-                            //                 ClipRRect(
-                            //                   borderRadius:
-                            //                       BorderRadius.circular(10),
-                            //                   child: Opacity(
-                            //                     opacity: 0.2,
-                            //                     child: Image.memory(
-                            //                       thumbSnapshot.data
-                            //                           as Uint8List,
-                            //                       fit: BoxFit.cover,
-                            //                     ),
-                            //                   ),
-                            //                 ),
-                            //                 Center(
-                            //                   child: Text(
-                            //                     "+${formatImageCount(images.length - 5)}",
-                            //                     style: const TextStyle(
-                            //                       color: Colors.white,
-                            //                       fontSize: 24,
-                            //                     ),
-                            //                     overflow: TextOverflow.visible,
-                            //                     textAlign: TextAlign.center,
-                            //                   ),
-                            //                 ),
-                            //               ],
-                            //             ),
-                            //           );
-                            //         }
-                            //         return Stack(
-                            //           alignment: Alignment.center,
-                            //           fit: StackFit.expand,
-                            //           children: [
-                            //             ClipRRect(
-                            //               borderRadius:
-                            //                   BorderRadius.circular(10),
-                            //               child: Image.memory(
-                            //                 thumbSnapshot.data as Uint8List,
-                            //                 fit: BoxFit.cover,
-                            //               ),
-                            //             ),
-                            //             const Icon(
-                            //               Icons.play_circle_fill,
-                            //               size: 48,
-                            //               color: Colors.white,
-                            //             ),
-                            //           ],
-                            //         );
-                            //       } else {
-                            //         return Padding(
-                            //           padding: const EdgeInsets.all(40),
-                            //           child:
-                            //               CircularProgressIndicator(color: red),
-                            //         );
-                            //       }
-                            //     },
-                            //   );
-                            // }
                           }
                           return Padding(
                             padding: const EdgeInsets.all(50),
@@ -285,3 +205,56 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// class AssetThumbnail extends StatelessWidget {
+//   const AssetThumbnail({
+//     Key? key,
+//     required this.assetPath,
+//   }) : super(key: key);
+
+//   final AssetPathEntity assetPath;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return FutureBuilder<Uint8List?>(
+//       future: _loadThumbnail(),
+//       builder: (context, snapshot) {
+//         final bytes = snapshot.data;
+//         if (bytes == null) {
+//           return const CircularProgressIndicator();
+//         }
+//         return Image.memory(bytes, fit: BoxFit.cover);
+//       },
+//     );
+//   }
+
+//   Future<Uint8List?> _loadThumbnail() async {
+//     // Replace this with the logic to obtain the actual thumbnail data.
+//     // For example:
+//     Future<Uint8List?>? pass;
+//     final thumbnailData = await assetPath.getAssetListPaged(page: 0, size: 100);
+//     thumbnailData.forEach((AssetEntity element) {
+//       pass = element.thumbnailData;
+//     });
+//     return pass;
+//   }
+// }
