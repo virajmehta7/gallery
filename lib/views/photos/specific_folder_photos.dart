@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:gallery/utils/utils.dart';
+import 'package:gallery/utils/colors.dart';
 import 'package:gallery/views/photos/photo_view.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:intl/intl.dart';

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gallery/utils/format_duration.dart';
-import 'package:gallery/utils/utils.dart';
+import 'package:gallery/utils/colors.dart';
 import 'package:gallery/views/entity_info.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:share_plus/share_plus.dart';

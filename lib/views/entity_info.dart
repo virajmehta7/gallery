@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:gallery/utils/utils.dart';
+import 'package:gallery/utils/colors.dart';
 import 'package:intl/intl.dart';
 import 'package:photo_manager/photo_manager.dart';
 
@@ -15,19 +15,32 @@ class EntityInfo extends StatefulWidget {
 }
 
 class _EntityInfoState extends State<EntityInfo> {
+  Uint8List? thumbnail;
+  String? fileName = '';
   String path = '';
   String size = '';
+  String mDate = '';
+  String cDate = '';
 
-  getPath() async {
-    File? file = await widget.entity.file;
+  getDetails() async {
+    AssetEntity entity = widget.entity;
+
+    thumbnail = await entity.thumbnailData;
+    fileName = entity.title;
+
+    File? file = await entity.file;
     path = file!.path;
 
     int len = await file.length();
-    // int bytes = (await file.readAsBytes()).lengthInBytes;
-
+    // int bytes = (await file.readAsBytes()).lengthInBytes;  ----------it gives same answer and I doubt if size in MB is true
     double sizeMB = len / (1024 * 1024);
+    size =
+        "${widget.entity.size.shortestSide.toStringAsFixed(0)}x${widget.entity.size.longestSide.toStringAsFixed(0)}  •  ${sizeMB.toStringAsFixed(2)} MB";
 
-    size = '${sizeMB.toStringAsFixed(2)} MB';
+    mDate =
+        "Modified ${DateFormat('dd MMM, yyyy, hh:mm a').format(entity.modifiedDateTime)}";
+    cDate =
+        "Taken ${DateFormat('dd MMM, yyyy, hh:mm a').format(entity.createDateTime)}";
 
     setState(() {});
   }
@@ -35,7 +48,7 @@ class _EntityInfoState extends State<EntityInfo> {
   @override
   void initState() {
     super.initState();
-    getPath();
+    getDetails();
   }
 
   @override
@@ -48,15 +61,17 @@ class _EntityInfoState extends State<EntityInfo> {
         backgroundColor: backgroundColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: FutureBuilder<Uint8List?>(
-          future: widget.entity.thumbnailData,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.done &&
-                snapshot.hasData) {
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(5),
+      body: thumbnail == null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(50),
+                child: CircularProgressIndicator(color: red),
+              ),
+            )
+          : SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
                     SizedBox(
@@ -64,9 +79,12 @@ class _EntityInfoState extends State<EntityInfo> {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          Image.memory(
-                            snapshot.data!,
-                            fit: BoxFit.contain,
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.memory(
+                              thumbnail!,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                           (widget.entity.type == AssetType.video)
                               ? const CircleAvatar(
@@ -82,112 +100,99 @@ class _EntityInfoState extends State<EntityInfo> {
                         ],
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Center(
-                            child: Text(
-                              widget.entity.title.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontFamily: 'dotmatrix',
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 20),
-                            child: Divider(),
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.photo,
-                                color: Colors.white,
-                                size: 32,
-                              ),
-                              const SizedBox(width: 20),
-                              Flexible(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      path,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                      ),
-                                      overflow: TextOverflow.visible,
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      "${widget.entity.size.shortestSide.toStringAsFixed(0)}x${widget.entity.size.longestSide.toStringAsFixed(0)}  •  $size",
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 40),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.calendar_month,
-                                color: Colors.white,
-                                size: 32,
-                              ),
-                              const SizedBox(width: 20),
-                              Flexible(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "Modified ${DateFormat('dd MMM, yyyy, hh:mm a').format(widget.entity.modifiedDateTime)}",
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                      ),
-                                      overflow: TextOverflow.visible,
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      "Taken ${DateFormat('dd MMM, yyyy, hh:mm a').format(widget.entity.modifiedDateTime)}",
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                    const SizedBox(height: 40),
+                    Center(
+                      child: Text(
+                        fileName!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'dotmatrix',
+                          fontSize: 14,
+                        ),
                       ),
+                    ),
+                    const Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                      child: Divider(),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.photo,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                        const SizedBox(width: 20),
+                        Flexible(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                path,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                ),
+                                overflow: TextOverflow.visible,
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                size,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 40),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.calendar_month,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                        const SizedBox(width: 20),
+                        Flexible(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                mDate,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                ),
+                                overflow: TextOverflow.visible,
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                cDate,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              );
-            } else {
-              return Container();
-            }
-          },
-        ),
-      ),
+              ),
+            ),
     );
   }
 }

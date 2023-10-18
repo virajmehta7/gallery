@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gallery/utils/format_duration.dart';
 import 'package:gallery/utils/sub_string_name.dart';
-import 'package:gallery/utils/utils.dart';
+import 'package:gallery/utils/colors.dart';
 import 'package:gallery/views/videos/video_view.dart';
 import 'package:photo_manager/photo_manager.dart';
 
@@ -126,10 +127,24 @@ class _FolderVideoViewState extends State<FolderVideoView> {
                                       fit: BoxFit.cover,
                                     ),
                                   ),
-                                  const Icon(
-                                    Icons.play_circle_fill,
-                                    size: 48,
-                                    color: Colors.white,
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.play_circle_fill,
+                                        size: 48,
+                                        color: Colors.white,
+                                      ),
+                                      Text(
+                                        formatDuration(
+                                            videos[index].videoDuration),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),

@@ -13,25 +13,26 @@ dependencies:
     
   cupertino_icons: ^1.0.2
 
-  # set refresh rate
+  # setting higher refresh rate
   flutter_displaymode: ^0.6.0
   
-  # change name
+  # saving preferences
   shared_preferences: ^2.2.2
   
-  # permissions
+  # to ask and check permissions
   permission_handler: ^11.0.1
   
-  # images, videos, thumbnails
+  # get entitites and path
   photo_manager: ^2.7.2
+
+  # view photo and play video
   photo_view: ^0.14.0
   video_player: ^2.7.2
-  video_thumbnail: ^0.5.3
 
-  # dateTime parse
+  # dateTime format
   intl: ^0.18.1
 
-  # share
+  # share entities on different apps
   share_plus: ^7.2.1
 
 dev_dependencies:
@@ -39,7 +40,9 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^2.0.0
-#   flutter_launcher_icons: ^0.13.1
+  
+  # set logo
+  # flutter_launcher_icons: ^0.13.1
 
 # flutter_icons:
 #   android: true 

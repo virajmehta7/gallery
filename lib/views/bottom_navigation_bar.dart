@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gallery/utils/utils.dart';
+import 'package:gallery/utils/colors.dart';
 import 'package:gallery/views/change_title.dart';
 import 'package:gallery/views/photos/folder_photo_view.dart';
 import 'package:gallery/views/videos/folder_video_view.dart';

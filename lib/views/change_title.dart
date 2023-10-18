@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gallery/utils/outline_input_border.dart';
-import 'package:gallery/utils/utils.dart';
+import 'package:gallery/utils/colors.dart';
 import 'package:gallery/views/bottom_navigation_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

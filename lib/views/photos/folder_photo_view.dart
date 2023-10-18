@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:gallery/utils/format_image_count.dart';
 import 'package:gallery/utils/sub_string_name.dart';
-import 'package:gallery/utils/utils.dart';
+import 'package:gallery/utils/colors.dart';
 import 'package:gallery/views/photos/photo_view.dart';
 import 'package:gallery/views/photos/specific_folder_photos.dart';
 import 'package:photo_manager/photo_manager.dart';
