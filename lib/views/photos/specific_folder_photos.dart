@@ -26,6 +26,8 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
   BoxFit photoSize = BoxFit.cover;
   String photoSizeName = 'Aspect';
 
+  List<String> multipleEntity = [];
+
   groupImagesByDate() {
     widget.images
         .sort((a, b) => b.modifiedDateTime.compareTo(a.modifiedDateTime));
@@ -233,6 +235,38 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
           ),
         ],
       ),
+      bottomNavigationBar: multipleEntity.isNotEmpty
+          ? BottomAppBar(
+              color: Colors.transparent,
+              elevation: 0,
+              padding: EdgeInsets.zero,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                    ),
+                    onPressed: () async {
+                      final List<String> result = await PhotoManager.editor
+                          .deleteWithIds(multipleEntity);
+                      deleteEntity(result);
+                    },
+                    highlightColor: red,
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.share,
+                      color: Colors.white,
+                    ),
+                    onPressed: () async {},
+                    highlightColor: red,
+                  ),
+                ],
+              ),
+            )
+          : null,
       body: ListView.builder(
         itemCount: groupedImages.length,
         shrinkWrap: true,
@@ -298,6 +332,14 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
                                   }
                                 });
                               },
+                              onLongPress: () {
+                                if (multipleEntity.contains(entity.id)) {
+                                  multipleEntity.remove(entity.id);
+                                } else {
+                                  multipleEntity.add(entity.id);
+                                }
+                                setState(() {});
+                              },
                               child: FutureBuilder<Uint8List?>(
                                 future: entity.thumbnailData,
                                 builder: (context, snapshot) {
@@ -308,10 +350,43 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
                                       borderRadius: BorderRadius.circular(5),
                                       child: Hero(
                                         tag: entity.id,
-                                        child: Image.memory(
-                                          snapshot.data!,
-                                          fit: photoSize,
-                                        ),
+                                        child: multipleEntity
+                                                .contains(entity.id)
+                                            ? Container(
+                                                color: Colors.white,
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(8),
+                                                  child: Stack(
+                                                    alignment: Alignment.center,
+                                                    fit: StackFit.expand,
+                                                    children: [
+                                                      Image.memory(
+                                                        snapshot.data!,
+                                                        fit: photoSize,
+                                                      ),
+                                                      const Padding(
+                                                        padding:
+                                                            EdgeInsets.all(5),
+                                                        child: Align(
+                                                          alignment: Alignment
+                                                              .bottomRight,
+                                                          child: Icon(
+                                                            Icons
+                                                                .check_box_rounded,
+                                                            color: Colors.white,
+                                                            size: 32,
+                                                          ),
+                                                        ),
+                                                      )
+                                                    ],
+                                                  ),
+                                                ),
+                                              )
+                                            : Image.memory(
+                                                snapshot.data!,
+                                                fit: photoSize,
+                                              ),
                                       ),
                                     );
                                   } else {
