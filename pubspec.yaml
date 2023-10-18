@@ -28,6 +28,7 @@ dependencies:
   # view photo and play video
   photo_view: ^0.14.0
   video_player: ^2.7.2
+  chewie: ^1.7.1
 
   # dateTime format
   intl: ^0.18.1
@@ -42,13 +43,13 @@ dev_dependencies:
   flutter_lints: ^2.0.0
   
   # set logo
-  # flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.13.1
 
-# flutter_icons:
-#   android: true 
-#   image_path: "assets/images/logo.png"
-#   adaptive_icon_background: "#000000"
-#   adaptive_icon_foreground: "assets/images/logo.png"
+flutter_icons:
+  android: true 
+  image_path: "assets/images/logo.jpg"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/images/logo.jpg"
 
 flutter:
 
@@ -60,4 +61,4 @@ flutter:
   fonts:
     - family: dotmatrix
       fonts:
-        - asset: assets/fonts/dotmatrix-cufonfonts/DOTMATRX.TTF
+        - asset: assets/fonts/DOTMATRX.TTF

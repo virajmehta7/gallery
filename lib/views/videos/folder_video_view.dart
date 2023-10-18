@@ -134,9 +134,10 @@ class _FolderVideoViewState extends State<FolderVideoView> {
                                     children: [
                                       const Icon(
                                         Icons.play_circle_fill,
-                                        size: 48,
+                                        size: 36,
                                         color: Colors.white,
                                       ),
+                                      const SizedBox(height: 2),
                                       Text(
                                         formatDuration(
                                             videos[index].videoDuration),

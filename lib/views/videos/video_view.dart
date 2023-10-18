@@ -1,9 +1,9 @@
-import 'dart:async';
 import 'dart:io';
+import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
-import 'package:gallery/utils/format_duration.dart';
 import 'package:gallery/utils/colors.dart';
 import 'package:gallery/views/entity_info.dart';
+import 'package:intl/intl.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
@@ -19,33 +19,33 @@ class VideoView extends StatefulWidget {
 }
 
 class _VideoViewState extends State<VideoView> {
-  late VideoPlayerController controller;
-  bool iconVisible = true;
-
-  final StreamController<Duration> positionStreamController =
-      StreamController<Duration>();
-
-  Stream<Duration> get positionStream => positionStreamController.stream;
+  late VideoPlayerController videoPlayerController;
+  late ChewieController chewieController;
 
   @override
   void initState() {
     super.initState();
-    controller = VideoPlayerController.file(File(widget.videoPath))
+    videoPlayerController = VideoPlayerController.file(File(widget.videoPath))
       ..initialize().then((_) {
+        chewieController = ChewieController(
+          videoPlayerController: videoPlayerController,
+          aspectRatio: videoPlayerController.value.aspectRatio,
+          materialProgressColors: ChewieProgressColors(
+            backgroundColor: Colors.grey.shade300,
+            bufferedColor: Colors.transparent,
+            handleColor: red,
+            playedColor: red,
+          ),
+        );
         setState(() {});
-
-        controller.addListener(() {
-          positionStreamController.add(controller.value.position);
-        });
-        controller.setLooping(true);
       });
   }
 
   @override
   void dispose() {
+    videoPlayerController.dispose();
+    chewieController.dispose();
     super.dispose();
-    controller.dispose();
-    positionStreamController.close();
   }
 
   @override
@@ -53,96 +53,104 @@ class _VideoViewState extends State<VideoView> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: StreamBuilder<Duration>(
-          stream: positionStream,
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return Text(
-                '${formatDuration(snapshot.data!)} / ${formatDuration(controller.value.duration)}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                ),
-              );
-            } else {
-              return Container();
-            }
-          },
+        title: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              DateFormat('dd MMMM, yyyy').format(widget.video.modifiedDateTime),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+            Text(
+              DateFormat('hh:mm a').format(widget.video.modifiedDateTime),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
         elevation: 0,
         scrolledUnderElevation: 0,
-        centerTitle: true,
         backgroundColor: backgroundColor,
         iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            onPressed: () {
-              final filePath = widget.videoPath;
-              Share.shareFiles([filePath]);
-            },
-            icon: const Icon(Icons.share),
-          ),
-          IconButton(
-            onPressed: () {
-              controller.pause();
-              iconVisible = !iconVisible;
-              setState(() {});
-
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => EntityInfo(entity: widget.video)));
-            },
-            icon: const Icon(Icons.info),
-          ),
-        ],
       ),
-      body: Center(
-        child: controller.value.isInitialized
-            ? GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () {
-                  setState(() {
-                    if (controller.value.isPlaying) {
-                      controller.pause();
-                    } else {
-                      controller.play();
-                    }
-                    iconVisible = !iconVisible;
-                  });
-                },
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    AspectRatio(
-                      aspectRatio: controller.value.aspectRatio,
-                      child: VideoPlayer(controller),
-                    ),
-                    AnimatedOpacity(
-                      opacity: iconVisible ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 500),
-                      child: CircleAvatar(
-                        backgroundColor: Colors.white,
-                        radius: 30,
-                        child: Icon(
-                          controller.value.isPlaying
-                              ? Icons.pause
-                              : Icons.play_arrow,
-                          size: 40,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(40),
-                  child: CircularProgressIndicator(color: red),
-                ),
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.transparent,
+        elevation: 0,
+        padding: EdgeInsets.zero,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            IconButton(
+              icon: const Icon(
+                Icons.share,
+                color: Colors.white,
               ),
+              onPressed: () {
+                final filePath = widget.videoPath;
+                Share.shareFiles([filePath]);
+              },
+              highlightColor: red,
+            ),
+            // IconButton(
+            //   icon: const Icon(
+            //     Icons.edit,
+            //     color: Colors.white,
+            //   ),
+            //   onPressed: () {},
+            //   highlightColor: red,
+            // ),
+            // IconButton(
+            //   icon: const Icon(
+            //     Icons.star,
+            //     color: Colors.white,
+            //   ),
+            //   onPressed: () {},
+            //   highlightColor: red,
+            // ),
+            IconButton(
+              icon: const Icon(
+                Icons.delete,
+                color: Colors.white,
+              ),
+              onPressed: () {},
+              highlightColor: red,
+            ),
+            IconButton(
+              icon: const Icon(
+                Icons.info,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                videoPlayerController.pause();
+                setState(() {});
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            EntityInfo(entity: widget.video)));
+              },
+            ),
+          ],
+        ),
       ),
+      body: videoPlayerController.value.isInitialized
+          ? Center(
+              child: AspectRatio(
+                aspectRatio: videoPlayerController.value.aspectRatio,
+                child: Chewie(controller: chewieController),
+              ),
+            )
+          : Center(
+              child: Padding(
+                padding: const EdgeInsets.all(40),
+                child: CircularProgressIndicator(color: red),
+              ),
+            ),
     );
   }
 }

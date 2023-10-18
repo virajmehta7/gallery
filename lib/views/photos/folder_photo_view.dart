@@ -83,7 +83,9 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
                           MaterialPageRoute(
                               builder: (context) => SpecificFolderPhotos(
                                   folderName: subStringName(folder.name, 15),
-                                  images: images)));
+                                  images: images))).then((value) {
+                        loadImages();
+                      });
                     },
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -130,13 +132,16 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
                                 behavior: HitTestBehavior.translucent,
                                 onTap: () {
                                   Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              SpecificFolderPhotos(
-                                                  folderName: subStringName(
-                                                      folder.name, 15),
-                                                  images: images)));
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  SpecificFolderPhotos(
+                                                      folderName: subStringName(
+                                                          folder.name, 15),
+                                                      images: images)))
+                                      .then((value) {
+                                    loadImages();
+                                  });
                                 },
                                 child: Stack(
                                   fit: StackFit.expand,
@@ -172,11 +177,14 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
                               behavior: HitTestBehavior.translucent,
                               onTap: () {
                                 Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => PhotoView(
-                                            galleryItems: images,
-                                            initialIndex: index)));
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => PhotoView(
+                                                galleryItems: images,
+                                                initialIndex: index)))
+                                    .then((value) {
+                                  loadImages();
+                                });
                               },
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(5),

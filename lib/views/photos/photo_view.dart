@@ -21,9 +21,8 @@ class PhotoView extends StatefulWidget {
 }
 
 class _PhotoViewState extends State<PhotoView> {
-  int currentIndex = 0;
   PageController? pageController;
-
+  int currentIndex = 0;
   bool uiVisible = true;
 
   @override
@@ -44,13 +43,6 @@ class _PhotoViewState extends State<PhotoView> {
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () {
-                if (uiVisible) {
-                  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive,
-                      overlays: []);
-                } else {
-                  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge,
-                      overlays: SystemUiOverlay.values);
-                }
                 setState(() {
                   uiVisible = !uiVisible;
                 });
@@ -182,7 +174,14 @@ class _PhotoViewState extends State<PhotoView> {
                         Icons.delete,
                         color: Colors.white,
                       ),
-                      onPressed: () {},
+                      onPressed: () async {
+                        final List<String> result =
+                            await PhotoManager.editor.deleteWithIds(
+                          [widget.galleryItems![currentIndex].id],
+                        );
+
+                        Navigator.of(context).pop(result);
+                      },
                       highlightColor: red,
                     ),
                     IconButton(
