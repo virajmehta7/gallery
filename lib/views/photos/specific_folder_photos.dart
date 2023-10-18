@@ -65,7 +65,7 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
   deleteEntity(List<String> result) {
     for (String id in result) {
       for (var date in groupedImages.keys) {
-        groupedImages[date]?.removeWhere((entity) => entity.id == id);
+        groupedImages[date]!.removeWhere((entity) => entity.id == id);
       }
       widget.images.removeWhere((entity) => entity.id == id);
     }

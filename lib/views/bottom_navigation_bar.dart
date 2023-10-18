@@ -14,14 +14,13 @@ class BottomNavBar extends StatefulWidget {
 }
 
 class _BottomNavBarState extends State<BottomNavBar> {
-  int currentIndex = 0;
-
   final tabs = [
     const FolderPhotoView(),
     const FolderVideoView(),
   ];
 
   String title = "VM's";
+  int currentIndex = 0;
 
   changeName() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();

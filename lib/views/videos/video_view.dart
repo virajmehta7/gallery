@@ -117,7 +117,14 @@ class _VideoViewState extends State<VideoView> {
                 Icons.delete,
                 color: Colors.white,
               ),
-              onPressed: () {},
+              onPressed: () async {
+                final List<String> result =
+                    await PhotoManager.editor.deleteWithIds(
+                  [widget.video.id],
+                );
+
+                Navigator.of(context).pop(result);
+              },
               highlightColor: red,
             ),
             IconButton(

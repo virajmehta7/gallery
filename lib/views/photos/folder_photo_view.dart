@@ -19,6 +19,9 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
   List<AssetPathEntity> sortedFolders = [];
 
   loadImages() async {
+    folderImages = {};
+    sortedFolders = [];
+
     final List<AssetPathEntity> paths =
         await PhotoManager.getAssetPathList(type: RequestType.image);
 
@@ -52,9 +55,24 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
   Widget build(BuildContext context) {
     if (sortedFolders.isEmpty) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(50),
-          child: CircularProgressIndicator(color: red),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.photo,
+              color: red,
+              size: 40,
+            ),
+            const SizedBox(height: 5),
+            const Text(
+              'No Photos',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -70,142 +88,149 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
             AssetPathEntity folder = sortedFolders[index];
             List<AssetEntity> images = folderImages[folder] ?? [];
 
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => SpecificFolderPhotos(
-                                  folderName: subStringName(folder.name, 15),
-                                  images: images))).then((value) {
-                        loadImages();
-                      });
-                    },
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+            return images.isNotEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          subStringName(folder.name, 20),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontFamily: 'dotmatrix',
-                            color: Colors.white,
+                        GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTap: () {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => SpecificFolderPhotos(
+                                        folderName:
+                                            subStringName(folder.name, 15),
+                                        images: images))).then((value) {
+                              loadImages();
+                            });
+                          },
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                subStringName(folder.name, 20),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontFamily: 'dotmatrix',
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                ' >',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontFamily: 'dotmatrix',
+                                  color: red,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          ' >',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontFamily: 'dotmatrix',
-                            color: red,
+                        const SizedBox(height: 10),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const BouncingScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            crossAxisSpacing: 5,
+                            mainAxisSpacing: 5,
                           ),
+                          itemCount: images.length < 8 ? images.length : 8,
+                          itemBuilder: (context, index) {
+                            return FutureBuilder<Uint8List?>(
+                              future: images[index].thumbnailData,
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                        ConnectionState.done &&
+                                    snapshot.hasData) {
+                                  if (index == 7) {
+                                    return GestureDetector(
+                                      behavior: HitTestBehavior.translucent,
+                                      onTap: () {
+                                        Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        SpecificFolderPhotos(
+                                                            folderName:
+                                                                subStringName(
+                                                                    folder.name,
+                                                                    15),
+                                                            images: images)))
+                                            .then((value) {
+                                          loadImages();
+                                        });
+                                      },
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        alignment: Alignment.center,
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                            child: Opacity(
+                                              opacity: 0.2,
+                                              child: Image.memory(
+                                                snapshot.data!,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                          ),
+                                          Center(
+                                            child: Text(
+                                              "+${formatImageCount(images.length - 7)}",
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 18,
+                                                fontFamily: 'dotmatrix',
+                                              ),
+                                              overflow: TextOverflow.visible,
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+                                  return GestureDetector(
+                                    behavior: HitTestBehavior.translucent,
+                                    onTap: () {
+                                      Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) => PhotoView(
+                                                  galleryItems: images,
+                                                  initialIndex: index))).then(
+                                          (value) {
+                                        loadImages();
+                                      });
+                                    },
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(5),
+                                      child: Image.memory(
+                                        snapshot.data!,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return Padding(
+                                  padding: const EdgeInsets.all(50),
+                                  child: CircularProgressIndicator(color: red),
+                                );
+                              },
+                            );
+                          },
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const BouncingScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 5,
-                      mainAxisSpacing: 5,
-                    ),
-                    itemCount: images.length < 8 ? images.length : 8,
-                    itemBuilder: (context, index) {
-                      return FutureBuilder<Uint8List?>(
-                        future: images[index].thumbnailData,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                                  ConnectionState.done &&
-                              snapshot.hasData) {
-                            if (index == 7) {
-                              return GestureDetector(
-                                behavior: HitTestBehavior.translucent,
-                                onTap: () {
-                                  Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  SpecificFolderPhotos(
-                                                      folderName: subStringName(
-                                                          folder.name, 15),
-                                                      images: images)))
-                                      .then((value) {
-                                    loadImages();
-                                  });
-                                },
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  alignment: Alignment.center,
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(5),
-                                      child: Opacity(
-                                        opacity: 0.2,
-                                        child: Image.memory(
-                                          snapshot.data!,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                    Center(
-                                      child: Text(
-                                        "+${formatImageCount(images.length - 7)}",
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18,
-                                          fontFamily: 'dotmatrix',
-                                        ),
-                                        overflow: TextOverflow.visible,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                            return GestureDetector(
-                              behavior: HitTestBehavior.translucent,
-                              onTap: () {
-                                Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) => PhotoView(
-                                                galleryItems: images,
-                                                initialIndex: index)))
-                                    .then((value) {
-                                  loadImages();
-                                });
-                              },
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(5),
-                                child: Image.memory(
-                                  snapshot.data!,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            );
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.all(50),
-                            child: CircularProgressIndicator(color: red),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ],
-              ),
-            );
+                  )
+                : Container();
           },
         ),
       ),
