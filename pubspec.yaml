@@ -13,8 +13,11 @@ dependencies:
     
   cupertino_icons: ^1.0.2
 
-  # setting higher refresh rate
+  # setting highest refresh rate
   flutter_displaymode: ^0.6.0
+
+  # update ui without setstate
+  provider: ^6.0.5
   
   # saving preferences
   shared_preferences: ^2.2.2

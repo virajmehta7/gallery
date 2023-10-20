@@ -4,6 +4,7 @@ import 'package:gallery/utils/colors.dart';
 import 'package:gallery/views/photos/photo_view.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SpecificFolderPhotos extends StatefulWidget {
@@ -25,7 +26,6 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
   int count = 4;
   BoxFit photoSize = BoxFit.cover;
   String photoSizeName = 'Aspect';
-
   List<String> multipleEntity = [];
 
   groupImagesByDate() {
@@ -64,15 +64,32 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
     setState(() {});
   }
 
-  deleteEntity(List<String> result) {
+  deleteSelectedImages(List<String> result) {
     for (String id in result) {
       for (var date in groupedImages.keys) {
         groupedImages[date]!.removeWhere((entity) => entity.id == id);
       }
       widget.images.removeWhere((entity) => entity.id == id);
     }
+    multipleEntity = [];
 
     setState(() {});
+  }
+
+  shareSeletedImages() async {
+    List<String> filePaths = [];
+
+    for (String id in multipleEntity) {
+      final entity = widget.images.firstWhere((entity) => entity.id == id);
+      final data = await entity.file;
+      if (data != null) {
+        filePaths.add(data.path);
+      }
+    }
+
+    if (filePaths.isNotEmpty) {
+      await Share.shareFiles(filePaths);
+    }
   }
 
   @override
@@ -251,7 +268,7 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
                     onPressed: () async {
                       final List<String> result = await PhotoManager.editor
                           .deleteWithIds(multipleEntity);
-                      deleteEntity(result);
+                      deleteSelectedImages(result);
                     },
                     highlightColor: red,
                   ),
@@ -260,7 +277,11 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
                       Icons.share,
                       color: Colors.white,
                     ),
-                    onPressed: () async {},
+                    onPressed: () async {
+                      if (multipleEntity.isNotEmpty) {
+                        shareSeletedImages();
+                      }
+                    },
                     highlightColor: red,
                   ),
                 ],
@@ -307,30 +328,39 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
                             return GestureDetector(
                               behavior: HitTestBehavior.translucent,
                               onTap: () async {
-                                int overallIndex = 0;
+                                if (multipleEntity.isEmpty) {
+                                  int overallIndex = 0;
 
-                                for (int i = 0;
-                                    i <
-                                        groupedImages.keys
-                                            .toList()
-                                            .indexOf(date);
-                                    i++) {
-                                  overallIndex += groupedImages[
-                                          groupedImages.keys.elementAt(i)]!
-                                      .length;
-                                }
-                                overallIndex += index;
-                                await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => PhotoView(
-                                              galleryItems: widget.images,
-                                              initialIndex: overallIndex,
-                                            ))).then((result) {
-                                  if (result != null) {
-                                    deleteEntity(result);
+                                  for (int i = 0;
+                                      i <
+                                          groupedImages.keys
+                                              .toList()
+                                              .indexOf(date);
+                                      i++) {
+                                    overallIndex += groupedImages[
+                                            groupedImages.keys.elementAt(i)]!
+                                        .length;
                                   }
-                                });
+                                  overallIndex += index;
+                                  await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => PhotoView(
+                                                galleryItems: widget.images,
+                                                initialIndex: overallIndex,
+                                              ))).then((result) {
+                                    if (result != null) {
+                                      deleteSelectedImages(result);
+                                    }
+                                  });
+                                } else if (multipleEntity.isNotEmpty) {
+                                  if (multipleEntity.contains(entity.id)) {
+                                    multipleEntity.remove(entity.id);
+                                  } else {
+                                    multipleEntity.add(entity.id);
+                                  }
+                                  setState(() {});
+                                }
                               },
                               onLongPress: () {
                                 if (multipleEntity.contains(entity.id)) {
@@ -352,36 +382,46 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
                                         tag: entity.id,
                                         child: multipleEntity
                                                 .contains(entity.id)
-                                            ? Container(
-                                                color: Colors.white,
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.all(8),
-                                                  child: Stack(
-                                                    alignment: Alignment.center,
-                                                    fit: StackFit.expand,
-                                                    children: [
-                                                      Image.memory(
-                                                        snapshot.data!,
-                                                        fit: photoSize,
-                                                      ),
-                                                      const Padding(
-                                                        padding:
-                                                            EdgeInsets.all(5),
-                                                        child: Align(
-                                                          alignment: Alignment
-                                                              .bottomRight,
-                                                          child: Icon(
-                                                            Icons
-                                                                .check_box_rounded,
-                                                            color: Colors.white,
-                                                            size: 32,
-                                                          ),
+                                            ? Stack(
+                                                alignment: Alignment.center,
+                                                fit: StackFit.expand,
+                                                children: [
+                                                  Container(
+                                                    color: Colors.grey.shade300,
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              10),
+                                                      child: ClipRRect(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(20),
+                                                        child: Image.memory(
+                                                          snapshot.data!,
+                                                          fit: photoSize,
                                                         ),
-                                                      )
-                                                    ],
+                                                      ),
+                                                    ),
                                                   ),
-                                                ),
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.all(8),
+                                                    child: Align(
+                                                      alignment:
+                                                          Alignment.topLeft,
+                                                      child: CircleAvatar(
+                                                        backgroundColor: Colors
+                                                            .grey.shade700,
+                                                        radius: 12,
+                                                        child: const Icon(
+                                                          Icons.check,
+                                                          color: Colors.white,
+                                                          size: 18,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  )
+                                                ],
                                               )
                                             : Image.memory(
                                                 snapshot.data!,
