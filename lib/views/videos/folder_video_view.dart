@@ -89,7 +89,8 @@ class _FolderVideoViewState extends State<FolderVideoView> {
           return Visibility(
             visible: multipleVideos.getselectedVideos.isNotEmpty,
             child: BottomAppBar(
-              color: Colors.transparent,
+              color: Colors.grey.shade800,
+              height: MediaQuery.of(context).size.height * 0.07,
               elevation: 0,
               padding: EdgeInsets.zero,
               child: Row(
