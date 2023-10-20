@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
+import 'package:gallery/provider/multiple_selected_images.dart';
+import 'package:gallery/provider/multiple_selected_videos.dart';
 import 'package:gallery/views/check_permission.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const VMGallery());
+  runApp(MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (context) => MultipleSelectedImages()),
+      ChangeNotifierProvider(create: (context) => MultipleSelectedVideos()),
+    ],
+    child: const VMGallery(),
+  ));
 }
 
 class VMGallery extends StatefulWidget {

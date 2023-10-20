@@ -1,9 +1,11 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:gallery/provider/multiple_selected_images.dart';
 import 'package:gallery/utils/colors.dart';
 import 'package:gallery/views/photos/photo_view.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,7 +28,6 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
   int count = 4;
   BoxFit photoSize = BoxFit.cover;
   String photoSizeName = 'Aspect';
-  List<String> multipleEntity = [];
 
   groupImagesByDate() {
     widget.images
@@ -64,34 +65,6 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
     setState(() {});
   }
 
-  deleteSelectedImages(List<String> result) {
-    for (String id in result) {
-      for (var date in groupedImages.keys) {
-        groupedImages[date]!.removeWhere((entity) => entity.id == id);
-      }
-      widget.images.removeWhere((entity) => entity.id == id);
-    }
-    multipleEntity = [];
-
-    setState(() {});
-  }
-
-  shareSeletedImages() async {
-    List<String> filePaths = [];
-
-    for (String id in multipleEntity) {
-      final entity = widget.images.firstWhere((entity) => entity.id == id);
-      final data = await entity.file;
-      if (data != null) {
-        filePaths.add(data.path);
-      }
-    }
-
-    if (filePaths.isNotEmpty) {
-      await Share.shareFiles(filePaths);
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -101,6 +74,9 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
 
   @override
   Widget build(BuildContext context) {
+    final multipleEntity =
+        Provider.of<MultipleSelectedImages>(context, listen: false);
+
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
@@ -252,8 +228,11 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
           ),
         ],
       ),
-      bottomNavigationBar: multipleEntity.isNotEmpty
-          ? BottomAppBar(
+      bottomNavigationBar: Consumer<MultipleSelectedImages>(
+        builder: (context, value, child) {
+          return Visibility(
+            visible: multipleEntity.getSelectedImages.isNotEmpty,
+            child: BottomAppBar(
               color: Colors.transparent,
               elevation: 0,
               padding: EdgeInsets.zero,
@@ -267,8 +246,18 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
                     ),
                     onPressed: () async {
                       final List<String> result = await PhotoManager.editor
-                          .deleteWithIds(multipleEntity);
-                      deleteSelectedImages(result);
+                          .deleteWithIds(multipleEntity.getSelectedImages);
+
+                      for (String id in result) {
+                        for (var date in groupedImages.keys) {
+                          groupedImages[date]!
+                              .removeWhere((entity) => entity.id == id);
+                        }
+                        widget.images.removeWhere((entity) => entity.id == id);
+                      }
+
+                      multipleEntity.clearImages();
+                      setState(() {});
                     },
                     highlightColor: red,
                   ),
@@ -278,124 +267,154 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
                       color: Colors.white,
                     ),
                     onPressed: () async {
-                      if (multipleEntity.isNotEmpty) {
-                        shareSeletedImages();
+                      if (multipleEntity.getSelectedImages.isNotEmpty) {
+                        List<String> filePaths = [];
+
+                        for (String id in multipleEntity.getSelectedImages) {
+                          final entity = widget.images
+                              .firstWhere((entity) => entity.id == id);
+                          final data = await entity.file;
+                          if (data != null) {
+                            filePaths.add(data.path);
+                          }
+                        }
+
+                        if (filePaths.isNotEmpty) {
+                          await Share.shareFiles(filePaths)
+                              .then((value) => multipleEntity.clearImages());
+                        }
                       }
                     },
                     highlightColor: red,
                   ),
                 ],
               ),
-            )
-          : null,
-      body: ListView.builder(
-        itemCount: groupedImages.length,
-        shrinkWrap: true,
+            ),
+          );
+        },
+      ),
+      body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        itemBuilder: (context, index) {
-          String date = groupedImages.keys.elementAt(index);
-          List<AssetEntity> images = groupedImages[date] ?? [];
+        child: ListView.builder(
+          itemCount: groupedImages.length,
+          shrinkWrap: true,
+          physics: const BouncingScrollPhysics(),
+          itemBuilder: (context, index) {
+            String date = groupedImages.keys.elementAt(index);
+            List<AssetEntity> images = groupedImages[date] ?? [];
 
-          return images.isNotEmpty
-              ? Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        date,
-                        style: const TextStyle(
-                          fontFamily: 'dotmatrix',
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: GridView.builder(
-                          itemCount: images.length,
-                          shrinkWrap: true,
-                          physics: const BouncingScrollPhysics(),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: count,
-                            crossAxisSpacing: 5,
-                            mainAxisSpacing: 5,
+            return images.isNotEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          date,
+                          style: const TextStyle(
+                            fontFamily: 'dotmatrix',
+                            color: Colors.white,
+                            fontSize: 16,
                           ),
-                          itemBuilder: (context, index) {
-                            final entity = images[index];
+                        ),
+                        const SizedBox(height: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: GridView.builder(
+                            itemCount: images.length,
+                            shrinkWrap: true,
+                            physics: const BouncingScrollPhysics(),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: count,
+                              crossAxisSpacing: 5,
+                              mainAxisSpacing: 5,
+                            ),
+                            itemBuilder: (context, index) {
+                              final entity = images[index];
 
-                            return GestureDetector(
-                              behavior: HitTestBehavior.translucent,
-                              onTap: () async {
-                                if (multipleEntity.isEmpty) {
-                                  int overallIndex = 0;
+                              return GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                onTap: () async {
+                                  if (multipleEntity
+                                      .getSelectedImages.isEmpty) {
+                                    int overallIndex = 0;
 
-                                  for (int i = 0;
-                                      i <
-                                          groupedImages.keys
-                                              .toList()
-                                              .indexOf(date);
-                                      i++) {
-                                    overallIndex += groupedImages[
-                                            groupedImages.keys.elementAt(i)]!
-                                        .length;
-                                  }
-                                  overallIndex += index;
-                                  await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) => PhotoView(
-                                                galleryItems: widget.images,
-                                                initialIndex: overallIndex,
-                                              ))).then((result) {
-                                    if (result != null) {
-                                      deleteSelectedImages(result);
+                                    for (int i = 0;
+                                        i <
+                                            groupedImages.keys
+                                                .toList()
+                                                .indexOf(date);
+                                        i++) {
+                                      overallIndex += groupedImages[
+                                              groupedImages.keys.elementAt(i)]!
+                                          .length;
                                     }
-                                  });
-                                } else if (multipleEntity.isNotEmpty) {
-                                  if (multipleEntity.contains(entity.id)) {
-                                    multipleEntity.remove(entity.id);
-                                  } else {
-                                    multipleEntity.add(entity.id);
+                                    overallIndex += index;
+                                    await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => PhotoView(
+                                                  galleryItems: widget.images,
+                                                  initialIndex: overallIndex,
+                                                ))).then((result) async {
+                                      if (result != null) {
+                                        for (String id in result) {
+                                          for (var date in groupedImages.keys) {
+                                            groupedImages[date]!.removeWhere(
+                                                (entity) => entity.id == id);
+                                          }
+                                          widget.images.removeWhere(
+                                              (entity) => entity.id == id);
+                                        }
+                                      }
+                                      multipleEntity.clearImages();
+                                      setState(() {});
+                                    });
+                                  } else if (multipleEntity
+                                      .getSelectedImages.isNotEmpty) {
+                                    multipleEntity.selectImages(entity.id);
                                   }
-                                  setState(() {});
-                                }
-                              },
-                              onLongPress: () {
-                                if (multipleEntity.contains(entity.id)) {
-                                  multipleEntity.remove(entity.id);
-                                } else {
-                                  multipleEntity.add(entity.id);
-                                }
-                                setState(() {});
-                              },
-                              child: FutureBuilder<Uint8List?>(
-                                future: entity.thumbnailData,
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState ==
-                                          ConnectionState.done &&
-                                      snapshot.hasData) {
-                                    return ClipRRect(
-                                      borderRadius: BorderRadius.circular(5),
-                                      child: Hero(
-                                        tag: entity.id,
-                                        child: multipleEntity
-                                                .contains(entity.id)
-                                            ? Stack(
+                                },
+                                onLongPress: () {
+                                  multipleEntity.selectImages(entity.id);
+                                },
+                                child: FutureBuilder<Uint8List?>(
+                                  future: entity.thumbnailData,
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                            ConnectionState.done &&
+                                        snapshot.hasData) {
+                                      return ClipRRect(
+                                        borderRadius: BorderRadius.circular(5),
+                                        child: Hero(
+                                          tag: entity.id,
+                                          child:
+                                              Consumer<MultipleSelectedImages>(
+                                            builder: (context, value, child) {
+                                              final isImageSelected =
+                                                  multipleEntity
+                                                      .getSelectedImages
+                                                      .contains(entity.id);
+
+                                              final pad = isImageSelected
+                                                  ? const EdgeInsets.all(10)
+                                                  : EdgeInsets.zero;
+
+                                              final bRadius = isImageSelected
+                                                  ? BorderRadius.circular(20)
+                                                  : BorderRadius.zero;
+
+                                              return Stack(
                                                 alignment: Alignment.center,
                                                 fit: StackFit.expand,
                                                 children: [
                                                   Container(
                                                     color: Colors.grey.shade300,
                                                     child: Padding(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              10),
+                                                      padding: pad,
                                                       child: ClipRRect(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(20),
+                                                        borderRadius: bRadius,
                                                         child: Image.memory(
                                                           snapshot.data!,
                                                           fit: photoSize,
@@ -403,52 +422,56 @@ class _SpecificFolderPhotosState extends State<SpecificFolderPhotos> {
                                                       ),
                                                     ),
                                                   ),
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.all(8),
-                                                    child: Align(
-                                                      alignment:
-                                                          Alignment.topLeft,
-                                                      child: CircleAvatar(
-                                                        backgroundColor: Colors
-                                                            .grey.shade700,
-                                                        radius: 12,
-                                                        child: const Icon(
-                                                          Icons.check,
-                                                          color: Colors.white,
-                                                          size: 18,
+                                                  if (multipleEntity
+                                                      .getSelectedImages
+                                                      .contains(entity.id))
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              8),
+                                                      child: Align(
+                                                        alignment:
+                                                            Alignment.topLeft,
+                                                        child: CircleAvatar(
+                                                          backgroundColor:
+                                                              Colors.grey
+                                                                  .shade700,
+                                                          radius: 12,
+                                                          child: const Icon(
+                                                            Icons.check,
+                                                            color: Colors.white,
+                                                            size: 18,
+                                                          ),
                                                         ),
                                                       ),
-                                                    ),
-                                                  )
+                                                    )
                                                 ],
-                                              )
-                                            : Image.memory(
-                                                snapshot.data!,
-                                                fit: photoSize,
-                                              ),
-                                      ),
-                                    );
-                                  } else {
-                                    return Center(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(40),
-                                        child: CircularProgressIndicator(
-                                            color: red),
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                            );
-                          },
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      );
+                                    } else {
+                                      return Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(40),
+                                          child: CircularProgressIndicator(
+                                              color: red),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                )
-              : Container();
-        },
+                      ],
+                    ),
+                  )
+                : Container();
+          },
+        ),
       ),
     );
   }

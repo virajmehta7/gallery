@@ -1,11 +1,13 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:gallery/provider/multiple_selected_images.dart';
 import 'package:gallery/utils/format_image_count.dart';
 import 'package:gallery/utils/sub_string_name.dart';
 import 'package:gallery/utils/colors.dart';
 import 'package:gallery/views/photos/photo_view.dart';
 import 'package:gallery/views/photos/specific_folder_photos.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:provider/provider.dart';
 
 class FolderPhotoView extends StatefulWidget {
   const FolderPhotoView({super.key});
@@ -98,6 +100,12 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
                         GestureDetector(
                           behavior: HitTestBehavior.translucent,
                           onTap: () {
+                            final multipleEntity =
+                                Provider.of<MultipleSelectedImages>(context,
+                                    listen: false);
+
+                            multipleEntity.clearImages();
+
                             Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -152,6 +160,13 @@ class _FolderPhotoViewState extends State<FolderPhotoView> {
                                     return GestureDetector(
                                       behavior: HitTestBehavior.translucent,
                                       onTap: () {
+                                        final multipleEntity =
+                                            Provider.of<MultipleSelectedImages>(
+                                                context,
+                                                listen: false);
+
+                                        multipleEntity.clearImages();
+
                                         Navigator.push(
                                                 context,
                                                 MaterialPageRoute(

@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gallery/provider/multiple_selected_videos.dart';
 import 'package:gallery/utils/format_duration.dart';
 import 'package:gallery/utils/sub_string_name.dart';
 import 'package:gallery/utils/colors.dart';
 import 'package:gallery/views/videos/video_view.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 class FolderVideoView extends StatefulWidget {
@@ -18,12 +20,10 @@ class FolderVideoView extends StatefulWidget {
 class _FolderVideoViewState extends State<FolderVideoView> {
   Map<AssetPathEntity, List<AssetEntity>> folderVideos = {};
   List<AssetPathEntity> sortedFolders = [];
-  List<String> multipleEntity = [];
 
   loadVideos() async {
     folderVideos = {};
     sortedFolders = [];
-    multipleEntity = [];
 
     final List<AssetPathEntity> paths =
         await PhotoManager.getAssetPathList(type: RequestType.video);
@@ -48,27 +48,6 @@ class _FolderVideoViewState extends State<FolderVideoView> {
     setState(() {});
   }
 
-  shareSeletedVideos() async {
-    List<String> filePaths = [];
-
-    for (String id in multipleEntity) {
-      for (final List<AssetEntity> entities in folderVideos.values) {
-        final entity = entities.where((entity) => entity.id == id);
-
-        if (entity.isNotEmpty) {
-          final data = await entity.first.file;
-          if (data != null) {
-            filePaths.add(data.path);
-          }
-        }
-      }
-    }
-
-    if (filePaths.isNotEmpty) {
-      await Share.shareFiles(filePaths);
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -77,6 +56,9 @@ class _FolderVideoViewState extends State<FolderVideoView> {
 
   @override
   Widget build(BuildContext context) {
+    final multipleVideos =
+        Provider.of<MultipleSelectedVideos>(context, listen: false);
+
     if (sortedFolders.isEmpty) {
       return Center(
         child: Column(
@@ -102,8 +84,11 @@ class _FolderVideoViewState extends State<FolderVideoView> {
     }
     return Scaffold(
       backgroundColor: backgroundColor,
-      bottomNavigationBar: multipleEntity.isNotEmpty
-          ? BottomAppBar(
+      bottomNavigationBar: Consumer<MultipleSelectedVideos>(
+        builder: (context, value, child) {
+          return Visibility(
+            visible: multipleVideos.getselectedVideos.isNotEmpty,
+            child: BottomAppBar(
               color: Colors.transparent,
               elevation: 0,
               padding: EdgeInsets.zero,
@@ -116,7 +101,9 @@ class _FolderVideoViewState extends State<FolderVideoView> {
                       color: Colors.white,
                     ),
                     onPressed: () async {
-                      await PhotoManager.editor.deleteWithIds(multipleEntity);
+                      await PhotoManager.editor
+                          .deleteWithIds(multipleVideos.getselectedVideos)
+                          .then((value) => multipleVideos.clearVideos());
                       loadVideos();
                     },
                     highlightColor: red,
@@ -127,30 +114,51 @@ class _FolderVideoViewState extends State<FolderVideoView> {
                       color: Colors.white,
                     ),
                     onPressed: () async {
-                      if (multipleEntity.isNotEmpty) {
-                        shareSeletedVideos();
+                      if (multipleVideos.getselectedVideos.isNotEmpty) {
+                        List<String> filePaths = [];
+
+                        for (String id in multipleVideos.getselectedVideos) {
+                          for (final List<AssetEntity> entities
+                              in folderVideos.values) {
+                            final entity =
+                                entities.where((entity) => entity.id == id);
+
+                            if (entity.isNotEmpty) {
+                              final data = await entity.first.file;
+                              if (data != null) {
+                                filePaths.add(data.path);
+                              }
+                            }
+                          }
+                        }
+
+                        if (filePaths.isNotEmpty) {
+                          await Share.shareFiles(filePaths)
+                              .then((value) => multipleVideos.clearVideos());
+                        }
                       }
                     },
                     highlightColor: red,
                   ),
                 ],
               ),
-            )
-          : null,
+            ),
+          );
+        },
+      ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: ListView.builder(
+          itemCount: sortedFolders.length,
           shrinkWrap: true,
           physics: const BouncingScrollPhysics(),
-          itemCount: sortedFolders.length,
           itemBuilder: (context, index) {
             AssetPathEntity folder = sortedFolders[index];
             List<AssetEntity> videos = folderVideos[folder] ?? [];
 
             return videos.isNotEmpty
                 ? Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 15),
+                    padding: const EdgeInsets.all(10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -163,75 +171,79 @@ class _FolderVideoViewState extends State<FolderVideoView> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        GridView.builder(
-                          itemCount: videos.length,
-                          shrinkWrap: true,
-                          physics: const BouncingScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 5,
-                            mainAxisSpacing: 5,
-                          ),
-                          itemBuilder: (context, index) {
-                            return FutureBuilder<Uint8List?>(
-                              future: videos[index].thumbnailData,
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                        ConnectionState.done &&
-                                    snapshot.hasData) {
-                                  return GestureDetector(
-                                    behavior: HitTestBehavior.translucent,
-                                    onTap: () async {
-                                      if (multipleEntity.isEmpty) {
-                                        File? file = await videos[index].file;
-                                        String path = file!.path;
+                        Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: GridView.builder(
+                            itemCount: videos.length,
+                            shrinkWrap: true,
+                            physics: const BouncingScrollPhysics(),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 5,
+                              mainAxisSpacing: 5,
+                            ),
+                            itemBuilder: (context, index) {
+                              return FutureBuilder<Uint8List?>(
+                                future: videos[index].thumbnailData,
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                          ConnectionState.done &&
+                                      snapshot.hasData) {
+                                    return GestureDetector(
+                                      behavior: HitTestBehavior.translucent,
+                                      onTap: () async {
+                                        if (multipleVideos
+                                            .getselectedVideos.isEmpty) {
+                                          File? file = await videos[index].file;
+                                          String path = file!.path;
 
-                                        // ignore: use_build_context_synchronously
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) => VideoView(
-                                                      video: videos[index],
-                                                      videoPath: path,
-                                                    ))).then((value) {
-                                          loadVideos();
-                                        });
-                                      } else if (multipleEntity.isNotEmpty) {
-                                        if (multipleEntity
-                                            .contains(videos[index].id)) {
-                                          multipleEntity
-                                              .remove(videos[index].id);
-                                        } else {
-                                          multipleEntity.add(videos[index].id);
+                                          // ignore: use_build_context_synchronously
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      VideoView(
+                                                        video: videos[index],
+                                                        videoPath: path,
+                                                      ))).then((value) {
+                                            multipleVideos.clearVideos;
+                                            loadVideos();
+                                          });
+                                        } else if (multipleVideos
+                                            .getselectedVideos.isNotEmpty) {
+                                          multipleVideos
+                                              .selectVideos(videos[index].id);
                                         }
-                                        setState(() {});
-                                      }
-                                    },
-                                    onLongPress: () {
-                                      if (multipleEntity
-                                          .contains(videos[index].id)) {
-                                        multipleEntity.remove(videos[index].id);
-                                      } else {
-                                        multipleEntity.add(videos[index].id);
-                                      }
-                                      setState(() {});
-                                    },
-                                    child: multipleEntity
-                                            .contains(videos[index].id)
-                                        ? Stack(
+                                      },
+                                      onLongPress: () {
+                                        multipleVideos
+                                            .selectVideos(videos[index].id);
+                                      },
+                                      child: Consumer<MultipleSelectedVideos>(
+                                        builder: (context, value, child) {
+                                          final isVideoSelected = multipleVideos
+                                              .getselectedVideos
+                                              .contains(videos[index].id);
+
+                                          final pad = isVideoSelected
+                                              ? const EdgeInsets.all(10)
+                                              : EdgeInsets.zero;
+
+                                          final bRadius = isVideoSelected
+                                              ? BorderRadius.circular(20)
+                                              : BorderRadius.zero;
+
+                                          return Stack(
                                             alignment: Alignment.center,
                                             fit: StackFit.expand,
                                             children: [
                                               Container(
                                                 color: Colors.grey.shade300,
                                                 child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.all(10),
+                                                  padding: pad,
                                                   child: ClipRRect(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            20),
+                                                    borderRadius: bRadius,
                                                     child: Image.memory(
                                                       snapshot.data!,
                                                       fit: BoxFit.cover,
@@ -260,69 +272,42 @@ class _FolderVideoViewState extends State<FolderVideoView> {
                                                   ),
                                                 ],
                                               ),
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsets.all(8),
-                                                child: Align(
-                                                  alignment: Alignment.topLeft,
-                                                  child: CircleAvatar(
-                                                    backgroundColor:
-                                                        Colors.grey.shade700,
-                                                    radius: 12,
-                                                    child: const Icon(
-                                                      Icons.check,
-                                                      color: Colors.white,
-                                                      size: 18,
+                                              if (multipleVideos
+                                                  .getselectedVideos
+                                                  .contains(videos[index].id))
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(8),
+                                                  child: Align(
+                                                    alignment:
+                                                        Alignment.topLeft,
+                                                    child: CircleAvatar(
+                                                      backgroundColor:
+                                                          Colors.grey.shade700,
+                                                      radius: 12,
+                                                      child: const Icon(
+                                                        Icons.check,
+                                                        color: Colors.white,
+                                                        size: 18,
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                              )
+                                                )
                                             ],
-                                          )
-                                        : Stack(
-                                            alignment: Alignment.center,
-                                            fit: StackFit.expand,
-                                            children: [
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(5),
-                                                child: Image.memory(
-                                                  snapshot.data!,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                              Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.center,
-                                                children: [
-                                                  const Icon(
-                                                    Icons.play_circle_fill,
-                                                    size: 36,
-                                                    color: Colors.white,
-                                                  ),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    formatDuration(videos[index]
-                                                        .videoDuration),
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.all(50),
+                                    child:
+                                        CircularProgressIndicator(color: red),
                                   );
-                                }
-                                return Padding(
-                                  padding: const EdgeInsets.all(50),
-                                  child: CircularProgressIndicator(color: red),
-                                );
-                              },
-                            );
-                          },
+                                },
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),
